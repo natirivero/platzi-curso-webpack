@@ -2,16 +2,24 @@ const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const CopyPlugin = require('copy-webpack-plugin');
+const CssMinimizerPlugin = require('css-minimizer-webpack-plugin');
+const TerserPlugin = require('terser-webpack-plugin');
 
 module.exports = {
   entry: './src/index.js',
   output: {
     path: path.resolve(__dirname, 'dist'),
-    filename: 'main.js',
+    filename: '[name].[contenthash].js',
     assetModuleFilename: 'assets/images/[hash][ext][query]',
   },
   resolve: {
     extensions: ['.js'],
+    alias: {
+      '@utils': path.resolve(__dirname, 'src/utils'),
+      '@templates': path.resolve(__dirname, 'src/templates'),
+      '@styles': path.resolve(__dirname, 'src/styles'),
+      '@images': path.resolve(__dirname, 'src/assets/images'),
+    },
   },
   module: {
     rules: [
@@ -23,8 +31,8 @@ module.exports = {
         },
       },
       {
-        test: /\.css$/i,
-        use: [MiniCssExtractPlugin.loader, 'css-loader'],
+        test: /\.css|.styl$/i,
+        use: [MiniCssExtractPlugin.loader, 'css-loader', 'stylus-loader'],
       },
       {
         test: /\.png$/,
@@ -34,7 +42,7 @@ module.exports = {
         test: /\.(woff|woff2)$/i, // Tipos de fuentes a incluir
         type: 'asset/resource', // Tipo de módulo a usar (este mismo puede ser usado para archivos de imágenes)
         generator: {
-          filename: 'static/fonts/[hash][ext][query]', // Directorio de salida
+          filename: 'assets/fonts/[name].[contenthash].[ext][query]', // Directorio de salida
         },
       },
     ],
@@ -45,7 +53,9 @@ module.exports = {
       template: './public/index.html',
       filename: './index.html',
     }),
-    new MiniCssExtractPlugin(),
+    new MiniCssExtractPlugin({
+      filename: 'assets/[name].[contenthash].css',
+    }),
     new CopyPlugin({
       patterns: [
         {
@@ -55,4 +65,8 @@ module.exports = {
       ],
     }),
   ],
+  optimization: {
+    minimize: true,
+    minimizer: [new CssMinimizerPlugin(), new TerserPlugin()],
+  },
 };
